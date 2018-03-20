@@ -1,83 +1,116 @@
 import React, { Component } from 'react';
 import Highcharts from 'highcharts';
-import { HighchartsChart, Chart, withHighcharts, XAxis, YAxis, Title, Legend, ScatterSeries, Tooltip, BubbleSeries} from 'react-jsx-highcharts';
-import { addDataPoint } from './helprs';
+import GraphDataConfig from './Config';
+import Loader from '../Loader';
 
-class ChartRender extends Component {
+class Chart extends Component {
 
-  constructor (props) {
-    super(props);
-    this.handleShow = this.handleShow.bind(this);
-    this.handleHide = this.handleHide.bind(this);
+    componentDidMount() {
 
-    this.state = {
-      userClicks: [],
-      clickCounter: 0
-    };
-  }
+    }
 
-  
+    componentDidUpdate(nextProps, nextState) {
+        this.chart = new Highcharts[nextProps.props || 'Chart'](
+            this.chartEl,
+            nextProps.options
+        );
 
-  handleShow () {
-    alert('Series shown');
-  }
+        if (this.circle) {
+            (this.circle.element).remove();
+        }
 
-  handleHide () {
-    alert('Series hidden');
-  }
+        if(this.chart.series[0])
+        {
+          this.chart.series[0].setData(nextProps.wells);
+          nextProps.groups.map((list_group, index) => {
+              if (index) {
+                  var pixelX = this.chart.xAxis[0].toPixels(list_group.x);
+                  var pixelY = this.chart.yAxis[0].toPixels(list_group.y);
+                  var pixelR = this.chart.xAxis[0].toPixels(list_group.r) - this.chart.xAxis[0].toPixels(0);
+                  this.circle = this.chart.renderer.circle(pixelX, pixelY, pixelR).attr({
+                      radius: 1,
+                      type: 'spline',
+                      fill: 'transparent',
+                      stroke: 'green',
+                      'stroke-width': 1
+                  });
+                  this.circle.add();
+              }
+          })
+          this.chart.redraw()
+        }
+    }
 
-  render() {
-    const myClicks= [ 
-            { x: 95, y: 95, z: 13.8, name: 'BE', country: 'Belgium' },
-            { x: 86.5, y: 102.9, z: 14.7, name: 'DE', country: 'Germany' },
-            { x: 80.8, y: 91.5, z: 15.8, name: 'FI', country: 'Finland' },
-            { x: 80.4, y: 102.5, z: 12, name: 'NL', country: 'Netherlands' },
-            { x: 80.3, y: 86.1, z: 11.8, name: 'SE', country: 'Sweden' },
-            { x: 78.4, y: 70.1, z: 16.6, name: 'ES', country: 'Spain' },
-            { x: 74.2, y: 68.5, z: 14.5, name: 'FR', country: 'France' },
-            { x: 73.5, y: 83.1, z: 10, name: 'NO', country: 'Norway' },
-            { x: 71, y: 93.2, z: 24.7, name: 'UK', country: 'United Kingdom' },
-            { x: 69.2, y: 57.6, z: 10.4, name: 'IT', country: 'Italy' },
-            { x: 68.6, y: 20, z: 16, name: 'RU', country: 'Russia' },
-            { x: 65.5, y: 126.4, z: 35.3, name: 'US', country: 'United States' },
-            { x: 65.4, y: 50.8, z: 28.5, name: 'HU', country: 'Hungary' },
-            { x: 63.4, y: 51.8, z: 15.4, name: 'PT', country: 'Portugal' },
-            { x: 64, y: 82.9, z: 300.3, name: 'NZ', country: 'New Zealand' }
-        
-    ]
-    const myClicks1 = [
-      [6, 6, 5],
-    ];
-    const { userClicks, clickCounter } = this.state;
+    componentWillUnmount() {
+        if(this.chart){
+          this.chart.destroy();
+        }
+    }
 
-    return (
-      <div className="app">
-
-        <HighchartsChart>
-          <Chart zoomType="xy" onClick={this.handleClick} />
-
-          <Title>Click to add data</Title>
-
-          <Legend>
-            <Legend.Title>Legend</Legend.Title>
-          </Legend>
-
-          <XAxis>
-            <XAxis.Title>X Coord</XAxis.Title>
-          </XAxis>
-
-          <YAxis id="scatter">
-            <YAxis.Title>Y Coord</YAxis.Title>
-            <Tooltip padding={10} hideDelay={250} shape="square" split />
-            <ScatterSeries id="my-clicks" name="Wells" data={myClicks} />
-             </YAxis>
-        </HighchartsChart>
-      
-
-       
-      </div>
-    );
-  }
+    render() {
+        return <div ref = { el => (this.chartEl = el) } />;
+    }
 }
 
-export default withHighcharts(ChartRender, Highcharts);
+var getgroups = [];
+var getwell = [];
+class App extends Component {
+
+
+    componentDidMount() {
+        this.height = 0;
+        this.width = 0;
+        this.graphdata = this.props.chartdata;
+        this.apperrors = this.props.apperrors.errors;
+    }
+
+    componentWillMount() {
+        this.height = window.outerWidth;
+        this.width = window.outerWidth;
+        this.graphdata = this.props.chartdata
+        this.props.GetEntities();
+        this.apperrors = this.props.apperrors.errors;
+    }
+
+    componentWillUpdate(nextProps, nextState) {
+
+        this.height = window.outerWidth;
+        this.width = window.outerWidth;
+        this.apperrors = nextProps.apperrors.errors;
+        console.log(nextProps);
+        if (nextProps.chartdata.entities) {
+            if (getwell && getgroups) {
+                nextProps.chartdata.entities.wells.map((_list_wells) => {
+                    getwell.push({
+                        x: _list_wells.top_Hole_X,
+                        y: _list_wells.top_Hole_Y,
+                        b_x: _list_wells.bottom_Hole_X,
+                        b_y: _list_wells.bottom_Hole_Y,
+                        name: _list_wells.name,
+                        group: _list_wells.groupId,
+                        well: _list_wells.wellId,
+                    })
+                })
+                nextProps.chartdata.entities.groups.map((_list_group) => {
+                    getgroups.push({
+                        x: _list_group.location_X,
+                        y: _list_group.location_Y,
+                        r: _list_group.radius,
+                        type: _list_group.type,
+                        wells: _list_group.wells,
+                    })
+                })
+            }
+        }
+    }
+
+    render() {
+        if(this.apperrors)
+        {
+          return <Loader errors={this.props.apperrors.errorsmessage}/>
+        }
+        return <div className="App"> <Chart options = {GraphDataConfig} groups = {getgroups} wells = {getwell}/> </div>
+    }
+}
+
+export default App;

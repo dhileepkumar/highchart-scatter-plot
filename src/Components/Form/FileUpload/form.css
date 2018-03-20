@@ -1,0 +1,18 @@
+#fileupload-container {
+    max-width: 300px;
+    margin: 0px auto;
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.fileblock.block {
+    height: 100vh;
+    display: table;
+    width: 100%;
+    text-align: center;
+}
+
+span{
+    color: red;
+    font-size: 14px;
+}
